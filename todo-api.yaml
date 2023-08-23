@@ -1,0 +1,99 @@
+namespace: todo-api
+todo-api:
+  defines: runnable
+  metadata:
+    name: todo-api
+    description: >-
+      This is a Todo API microservice that supports various backends for message
+      passing and storage.
+    icon: https://emojiapi.dev/api/v1/desktop_computer.svg
+  containers:
+    todo-api:
+      build: .
+  services:
+    api-port:
+      container: todo-api
+      port: 9234
+      host-port: 9234
+      publish: false
+      protocol: TCP
+      description: Port on which the Todo API listens for incoming HTTP requests
+  connections:
+    postgresql:
+      target: aerospike/aerospike
+      service: base-svc
+    vault:
+      target: arangodb/db
+      service: db
+    jaeger:
+      target: directus/server
+      service: server
+    elasticsearch:
+      target: monitoring/grafana
+      service: grafana
+    rabbitmq:
+      target: rabbitmq/rabbitmq
+      service: rabbitmq-amqp-1
+    kafka:
+      target: aerospike/aerospike
+      service: base-svc
+    redis: {}
+    memcached:
+      target: ''
+      service: ''
+  variables:
+    database-username:
+      env: DATABASE_USERNAME
+      type: string
+      description: Username for the Postgres database
+      value: '!!!SETME-USE-SECRETS!!!'
+    database-password:
+      env: DATABASE_PASSWORD
+      type: string
+      description: Password for the Postgres database
+      value: '!!!SETME-USE-SECRETS!!!'
+    database-name:
+      env: DATABASE_NAME
+      type: string
+      description: Name of the Postgres database
+      value: dbname
+    database-sslmode:
+      env: DATABASE_SSLMODE
+      type: string
+      description: Whether to use SSL for the connection to the Postgres database
+      value: disable
+    vault-token:
+      env: VAULT_TOKEN
+      type: string
+      description: Token for accessing the Vault key-value store
+      value: '!!!SETME-USE-SECRETS!!!'
+    vault-path:
+      env: VAULT_PATH
+      type: string
+      description: Path in the Vault key-value store
+      value: /secret
+    jaeger-service-name:
+      env: JAEGER_SERVICE_NAME
+      type: string
+      description: Name of the service in the Jaeger tracing system
+      value: todo-api
+    elasticsearch-url:
+      env: ELASTICSEARCH_URL
+      type: string
+      description: URL of the Elasticsearch server
+      value: <- connection-hostname("elasticsearch")
+    rabbitmq-url:
+      env: RABBITMQ_URL
+      type: string
+      description: URL of the RabbitMQ server
+      value: <- connection-hostname("rabbitmq")
+    kafka-topic:
+      env: KAFKA_TOPIC
+      type: string
+      description: Name of the topic in Kafka
+      value: tasks
+    redis-db:
+      env: REDIS_DB
+      type: string
+      description: Name of the database in Redis
+      value: todo
