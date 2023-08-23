@@ -1,0 +1,134 @@
+namespace: todo-api-microservice-example
+todo-api-microservice-example:
+  defines: runnable
+  metadata:
+    name: todo-api-microservice-example
+    description: This is a Go REST api application that maintains a ToDo list.
+    icon: https://emojiapi.dev/api/v1/memo.svg
+  containers:
+    todo-api-microservice-example:
+      build: .
+  services:
+    application-port:
+      container: todo-api-microservice-example
+      port: 9234
+      host-port: 9234
+      publish: false
+      protocol: TCP
+      description: This is where the service listens for incoming connections.
+  connections:
+    postgres:
+      target: postgresql/db
+      service: postgres
+    elasticsearch:
+      target: monitoring/grafana
+      service: grafana
+    redis:
+      target: redis/redis
+      service: redis-svc
+    rabbitmq:
+      target: rabbitmq/rabbitmq
+      service: rabbitmq-amqp-1
+    vault:
+      target: vault/vault
+      service: vault-svc
+    jaeger:
+      target: jaeger/base
+      service: service
+    kafka:
+      target: kafka/base
+      service: service
+    memcached:
+      target: memcached/memcached
+      service: memcached
+  variables:
+    database-host:
+      env: DATABASE_HOST
+      type: string
+      description: Database host
+      value: <- connection-hostname("postgres")
+    database-port:
+      env: DATABASE_PORT
+      type: string
+      description: Database port
+      value: <- connection-port("postgres")
+    database-username:
+      env: DATABASE_USERNAME
+      type: string
+      description: Database username
+      value: user
+    database-password:
+      env: DATABASE_PASSWORD
+      type: string
+      description: Database password
+      value: '!!!SETME-USE-SECRETS!!!'
+    database-name:
+      env: DATABASE_NAME
+      type: string
+      description: Database name
+      value: dbname
+    database-sslmode:
+      env: DATABASE_SSLMODE
+      type: string
+      description: Database SSL mode
+      value: disable
+    vault-token:
+      env: VAULT_TOKEN
+      type: string
+      description: Vault token
+      value: '!!!SETME-USE-SECRETS!!!'
+    vault-path:
+      env: VAULT_PATH
+      type: string
+      description: Vault path
+      value: /secret
+    vault-address:
+      env: VAULT_ADDRESS
+      type: string
+      description: Vault address
+      value: <- connection-hostname("vault")
+    jaeger-service-name:
+      env: JAEGER_SERVICE_NAME
+      type: string
+      description: Jaeger service name
+      value: todo-api
+    jaeger-endpoint:
+      env: JAEGER_ENDPOINT
+      type: string
+      description: Jaeger endpoint
+      value: <- connection-hostname("jaeger")
+    elasticsearch-url:
+      env: ELASTICSEARCH_URL
+      type: string
+      description: ElasticSearch URL
+      value: <- connection-hostname("elasticsearch")
+    rabbitmq-url:
+      env: RABBITMQ_URL
+      type: string
+      description: RabbitMQ URL
+      value: <- connection-hostname("rabbitmq")
+    kafka-host:
+      env: KAFKA_HOST
+      type: string
+      description: Kafka host
+      value: <- connection-hostname("kafka")
+    kafka-topic:
+      env: KAFKA_TOPIC
+      type: string
+      description: Kafka topic
+      value: tasks
+    redis-host:
+      env: REDIS_HOST
+      type: string
+      description: Redis host
+      value: <- connection-hostname("redis")
+    redis-db:
+      env: REDIS_DB
+      type: string
+      description: Redis db
+      value: todo
+    memcached-host:
+      env: MEMCACHED_HOST
+      type: string
+      description: Memcached host
+      value: <- connection-hostname("memcached")
