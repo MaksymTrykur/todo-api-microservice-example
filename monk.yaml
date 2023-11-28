@@ -1,0 +1,485 @@
+namespace: todo-api-microservice-example
+
+prometheus:
+  defines: runnable
+  inherits: monitoring/prometheus
+  metadata:
+    name: prometheus
+    description: Monitoring system and time series database.
+    icon: https://prometheus.io/assets/prometheus_logo_grey.svg
+  variables:
+    additional_targets:
+      type: string
+      value: ''
+      description: ''
+    cmdParams:
+      type: string
+      value: ''
+      description: ''
+    targets:
+      type: string
+      value: '"" connection-hostname("node") ":" connection-port("node") "" concat-all'
+      description: ''
+
+jaeger:
+  defines: runnable
+  inherits: acmefit/jaeger
+  metadata:
+    name: jaeger
+    description: Open source, end-to-end distributed tracing.
+    icon: https://www.jaegertracing.io/img/jaeger-icon-reverse-color.svg
+  variables: {}
+
+postgres:
+  defines: runnable
+  inherits: postgresql/db
+  metadata:
+    name: postgres
+    description: Open source relational database.
+    icon: https://www.postgresql.org/media/img/about/press/elephant.png
+  variables:
+    db_name:
+      type: string
+      value: monk
+      description: ''
+    db_pass:
+      type: string
+      value: adminpassword
+      description: ''
+    db_user:
+      type: string
+      value: monk
+      description: ''
+
+vault:
+  defines: runnable
+  inherits: vault/vault
+  metadata:
+    name: vault
+    description: Tool for secrets management.
+    icon: https://www.hashicorp.com/_next/static/media/colorwhite.c5723175.svg
+  variables:
+    monk_image_tag:
+      type: string
+      value: 1.13.3
+      description: ''
+    monk_skip_chown:
+      type: bool
+      value: false
+      description: ''
+    monk_skip_setcap:
+      type: bool
+      value: false
+      description: ''
+    monk_vault_addr:
+      type: string
+      value: http://localhost:8201
+      description: ''
+    monk_vault_api_addr:
+      type: string
+      value: http://0.0.0.0:8201
+      description: ''
+    monk_vault_port:
+      type: string
+      value: '8201'
+      description: ''
+
+redis:
+  defines: runnable
+  inherits: redis/redis
+  metadata:
+    name: redis
+    description: In-memory data structure store.
+    icon: >-
+      https://cdn.icon-icons.com/icons2/2415/PNG/512/redis_original_wordmark_logo_icon_146369.png
+  variables:
+    redis_disable_commands:
+      type: string
+      value: FLUSHDB,FLUSHALL,CONFIG
+      description: ''
+    redis_empty_password:
+      type: string
+      value: 'yes'
+      description: ''
+    redis_instance_name:
+      type: string
+      value: master
+      description: ''
+    redis_io_thread:
+      type: string
+      value: '1'
+      description: ''
+    redis_io_threads_do_reads:
+      type: string
+      value: 'yes'
+      description: ''
+    redis_port:
+      type: int
+      value: '6379'
+      description: ''
+
+memcached:
+  defines: runnable
+  inherits: memcached/memcached
+  metadata:
+    name: memcached
+    description: High-performance, distributed memory object caching system.
+    icon: https://avatars.githubusercontent.com/u/41836?s=200&v=4
+  variables:
+    memcached-image:
+      type: string
+      value: latest
+      description: ''
+    memcached_cache_size:
+      type: int
+      value: 128
+      description: ''
+    memcached_extra_flags:
+      type: string
+      value: ''
+      description: ''
+    memcached_max_connections:
+      type: int
+      value: 2000
+      description: ''
+    memcached_max_item_size:
+      type: int
+      value: 8388608
+      description: ''
+    memcached_password:
+      type: string
+      value: monk
+      description: ''
+    memcached_threads:
+      type: int
+      value: 4
+      description: ''
+    memcached_username:
+      type: string
+      value: monk
+      description: ''
+
+rest-server:
+  defines: runnable
+  metadata:
+    name: rest-server
+    description: Main REST API server for the application.
+    icon: https://emojiapi.dev/api/v1/robot.svg
+  containers:
+    rest-server:
+      image: env-2055.registry.local/rest-server:main-12ba1c7
+      build: .
+      dockerfile: build/rest-server/Dockerfile
+  services:
+    http-server:
+      description: HTTP server listening for incoming requests
+      container: rest-server
+      port: 9234
+      host-port: 9234
+      publish: true
+      protocol: tcp
+  connections:
+    database-connection:
+      target: todo-api-microservice-example/postgres
+      service: postgres
+      optional: true
+      description: Connection to the PostgreSQL database
+    elasticsearch-connection:
+      target: todo-api-microservice-example/elasticsearch
+      service: elasticsearch-http
+      optional: true
+      description: Connection to the Elasticsearch service
+    memcached-connection:
+      target: todo-api-microservice-example/memcached
+      service: memcached
+      optional: true
+      description: Connection to the Memcached service
+    redis-connection:
+      target: todo-api-microservice-example/redis
+      service: redis-svc
+      optional: true
+      description: Connection to the Redis service
+    vault-connection:
+      target: todo-api-microservice-example/vault
+      service: vault-svc
+      optional: true
+      description: Connection to the Vault service for secret management
+    telemetry-exporter-connection:
+      target: todo-api-microservice-example/jaeger
+      service: jaeger
+      optional: true
+      description: Connection for exporting telemetry data to Jaeger
+  variables:
+    database-host:
+      env: DATABASE_HOST
+      type: string
+      value: <- connection-hostname("database-connection")
+      description: Hostname for the database server
+    database-port:
+      env: DATABASE_PORT
+      type: string
+      value: <- connection-port("database-connection")
+      description: Port for the database server
+    database-username:
+      env: DATABASE_USERNAME
+      type: string
+      value: monk
+      description: Username for the database
+    database-password:
+      env: DATABASE_PASSWORD
+      type: string
+      value: adminpassword
+      description: Password for the database
+    database-name:
+      env: DATABASE_NAME
+      type: string
+      value: monk
+      description: Database name
+    database-sslmode:
+      env: DATABASE_SSLMODE
+      type: string
+      value: disable
+      description: SSL mode for the database connection
+    vault-token:
+      env: VAULT_TOKEN
+      type: string
+      value: myroot
+      description: Token for accessing Vault
+    vault-path:
+      env: VAULT_PATH
+      type: string
+      value: /secret
+      description: Path in Vault where secrets are stored
+    vault-address:
+      env: VAULT_ADDRESS
+      type: string
+      value: <- connection-hostname("vault-connection")
+      description: Address of the Vault server
+    jaeger-service-name:
+      env: JAEGER_SERVICE_NAME
+      type: string
+      value: todo-api
+      description: Service name for Jaeger tracing
+    jaeger-endpoint:
+      env: JAEGER_ENDPOINT
+      type: string
+      value: <- connection-hostname("telemetry-exporter-connection")
+      description: Endpoint for sending traces to Jaeger
+    elasticsearch-url:
+      env: ELASTICSEARCH_URL
+      type: string
+      value: <- connection-hostname("elasticsearch-connection")
+      description: URL for Elasticsearch server
+    rabbitmq-url:
+      env: RABBITMQ_URL
+      type: string
+      value: amqp://guest:guest@localhost:5672/
+      description: URL for RabbitMQ server
+    kafka-host:
+      env: KAFKA_HOST
+      type: string
+      value: localhost
+      description: Host for Kafka server
+    kafka-topic:
+      env: KAFKA_TOPIC
+      type: string
+      value: tasks
+      description: Kafka topic for tasks
+    redis-host:
+      env: REDIS_HOST
+      type: string
+      value: <- connection-hostname("redis-connection")
+      description: Host and port for Redis server
+    redis-db:
+      env: REDIS_DB
+      type: string
+      value: todo
+      description: Redis database name
+    memcached-host:
+      env: MEMCACHED_HOST
+      type: string
+      value: <- connection-hostname("memcached-connection")
+      description: Host and port for Memcached server
+
+elasticsearch-indexer-redis:
+  defines: runnable
+  metadata:
+    name: elasticsearch-indexer-redis
+    description: Service for indexing data to Elasticsearch using Redis.
+    icon: https://emojiapi.dev/api/v1/robot.svg
+  containers:
+    elasticsearch-indexer-redis:
+      image: env-2055.registry.local/elasticsearch-indexer-redis:main-12ba1c7
+      build: .
+      dockerfile: build/elasticsearch-indexer-redis/Dockerfile
+  services: {}
+  connections:
+    elasticsearch-connection:
+      target: todo-api-microservice-example/elasticsearch
+      service: elasticsearch-http
+      optional: true
+      description: Connection to the Elasticsearch service
+    jaeger-connection:
+      target: todo-api-microservice-example/jaeger
+      service: jaeger
+      optional: true
+      description: Connection to the Jaeger service for tracing
+    redis-connection:
+      target: todo-api-microservice-example/redis
+      service: redis-svc
+      optional: true
+      description: Connection to the Redis service
+    vault-connection:
+      target: todo-api-microservice-example/vault
+      service: vault-svc
+      optional: true
+      description: Connection to the Vault service for secrets management
+  variables:
+    database-host:
+      env: DATABASE_HOST
+      type: string
+      value: localhost
+      description: Hostname for the database server
+    database-port:
+      env: DATABASE_PORT
+      type: string
+      value: '5432'
+      description: Port for the database server
+    database-username:
+      env: DATABASE_USERNAME
+      type: string
+      value: monk
+      description: Username for the database
+    database-password:
+      env: DATABASE_PASSWORD
+      type: string
+      value: adminpassword
+      description: Password for the database
+    database-name:
+      env: DATABASE_NAME
+      type: string
+      value: monk
+      description: Name of the database
+    database-sslmode:
+      env: DATABASE_SSLMODE
+      type: string
+      value: disable
+      description: SSL mode for the database connection
+    vault-token:
+      env: VAULT_TOKEN
+      type: string
+      value: myroot
+      description: Token for accessing Vault
+    vault-path:
+      env: VAULT_PATH
+      type: string
+      value: /secret
+      description: Path in Vault where secrets are stored
+    vault-address:
+      env: VAULT_ADDRESS
+      type: string
+      value: <- connection-port("vault-connection")
+      description: Address of the Vault server
+    jaeger-service-name:
+      env: JAEGER_SERVICE_NAME
+      type: string
+      value: todo-api
+      description: Service name for Jaeger tracing
+    jaeger-endpoint:
+      env: JAEGER_ENDPOINT
+      type: string
+      value: <- connection-port("jaeger-connection")
+      description: Endpoint for sending Jaeger traces
+    elasticsearch-url:
+      env: ELASTICSEARCH_URL
+      type: string
+      value: <- connection-port("elasticsearch-connection")
+      description: URL for Elasticsearch server
+    rabbitmq-url:
+      env: RABBITMQ_URL
+      type: string
+      value: amqp://guest:guest@localhost:5672/
+      description: URL for RabbitMQ server
+    kafka-host:
+      env: KAFKA_HOST
+      type: string
+      value: localhost
+      description: Host for Kafka server
+    kafka-topic:
+      env: KAFKA_TOPIC
+      type: string
+      value: tasks
+      description: Topic name for Kafka messages
+    redis-host:
+      env: REDIS_HOST
+      type: string
+      value: <- connection-port("redis-connection")
+      description: Host and port for Redis server
+    redis-db:
+      env: REDIS_DB
+      type: string
+      value: todo
+      description: Database name for Redis
+    memcached-host:
+      env: MEMCACHED_HOST
+      type: string
+      value: localhost:11211
+      description: Host and port for Memcached server
+
+elasticsearch:
+  defines: runnable
+  metadata:
+    name: elasticsearch
+    description: Search and analytics engine.
+    icon: https://emojiapi.dev/api/v1/robot.svg
+  containers:
+    elasticsearch:
+      image: elasticsearch:7.17.9
+      build: .
+  services:
+    elasticsearch-http:
+      description: Elasticsearch HTTP API port
+      container: elasticsearch
+      port: 9200
+      host-port: 9200
+      publish: true
+      protocol: tcp
+    elasticsearch-transport:
+      description: Elasticsearch node-to-node communication port
+      container: elasticsearch
+      port: 9300
+      host-port: 9300
+      publish: false
+      protocol: tcp
+  connections:
+    elasticsearch-indexer-redis-to-elasticsearch:
+      target: todo-api-microservice-example/elasticsearch-indexer-redis
+      service: elasticsearch-http
+      optional: true
+      description: >-
+        The elasticsearch-indexer-redis service connects to the Elasticsearch
+        service using the ELASTICSEARCH_URL environment variable.
+  variables:
+    elasticsearch-url:
+      env: ELASTICSEARCH_URL
+      type: string
+      value: <- connection-port("elasticsearch-indexer-redis-to-elasticsearch")
+      description: URL for connecting to the Elasticsearch service
+    discovery.type:
+      env: discovery.type
+      type: string
+      value: single-node
+      description: Configuration to run Elasticsearch as a single-node cluster
+
+stack:
+  defines: group
+  members:
+    - todo-api-microservice-example/prometheus
+    - todo-api-microservice-example/jaeger
+    - todo-api-microservice-example/postgres
+    - todo-api-microservice-example/vault
+    - todo-api-microservice-example/redis
+    - todo-api-microservice-example/memcached
+    - todo-api-microservice-example/rest-server
+    - todo-api-microservice-example/elasticsearch-indexer-redis
+    - todo-api-microservice-example/elasticsearch
